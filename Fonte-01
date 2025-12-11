@@ -1,0 +1,97 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+
+abstract class Usuario {
+  - id: Long
+  - nome: String
+  - email: String
+
+  + visualizarPedido(codigo: String): Pedido
+}
+
+class Cliente {
+  + acompanharPedido(codigo: String): StatusPedido
+}
+
+class Atendente {
+  + consultarPedidosAtivos(): List<Pedido>
+}
+
+Usuario <|-- Cliente
+Usuario <|-- Atendente
+
+class Pedido {
+  - id: Long
+  - codigo: String
+  - dataCriacao: DateTime
+  - statusAtual: StatusPedido
+
+  + atualizarStatus(novoStatus: StatusPedido): void
+  + obterHistorico(): List<HistoricoStatus>
+}
+
+class StatusPedido {
+  - id: Integer
+  - nome: String
+  - ordem: Integer
+
+  + proximo(): StatusPedido
+}
+
+class HistoricoStatus {
+  - id: Long
+  - dataHora: DateTime
+  - status: StatusPedido
+}
+
+Pedido "1" *-- "1" StatusPedido : status atual
+Pedido "1" *-- "1..*" HistoricoStatus : histórico
+
+HistoricoStatus "*" --> "1" StatusPedido
+
+interface Notificador {
+  + enviarStatus(pedido: Pedido): void
+}
+
+class NotificacaoSistema {
+  + enviarStatus(pedido: Pedido): void
+}
+
+Notificador <|.. NotificacaoSistema
+
+Pedido ..> Notificador : depende
+
+class PedidoService {
+  + buscarPorCodigo(codigo: String): Pedido
+  + listarPorStatus(status: StatusPedido): List<Pedido>
+}
+
+class RastreamentoPedido {
+  + obterStatusAtual(pedido: Pedido): StatusPedido
+  + obterLinhaDoTempo(pedido: Pedido): List<HistoricoStatus>
+}
+
+PedidoService ..> Pedido
+RastreamentoPedido ..> Pedido
+RastreamentoPedido ..> HistoricoStatus
+
+note right of Pedido
+Pedido é o agregado raiz
+do acompanhamento,
+controlando status
+e histórico.
+end note
+
+note bottom of StatusPedido
+Classe modela o fluxo ordenado
+de estados do pedido.
+end note
+
+note right of Usuario
+Generalização garante acesso
+comum ao acompanhamento
+sem expor permissões extras.
+end note
+
+@enduml
